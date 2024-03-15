@@ -1,0 +1,47 @@
+
+Sure, I can provide you with a basic example of a smart contract written in Solidity for Ethereum. This example will be a simple contract to manage tokens between two parties.
+
+solidity
+Copy code
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract TokenMart {
+    address public seller;
+    address public buyer;
+    uint256 public price;
+    IERC20 public token;
+
+    event TokenTransferred(address indexed from, address indexed to, uint256 amount);
+
+    constructor(address _seller, address _tokenAddress, uint256 _price) {
+        seller = _seller;
+        token = IERC20(_tokenAddress);
+        price = _price;
+    }
+
+    function buyTokens() external {
+        require(buyer == address(0), "Tokens already sold");
+        uint256 allowance = token.allowance(msg.sender, address(this));
+        require(allowance >= price, "Insufficient allowance");
+
+        buyer = msg.sender;
+        token.transferFrom(seller, buyer, price);
+
+        emit TokenTransferred(seller, buyer, price);
+    }
+
+    function withdrawTokens() external {
+        require(msg.sender == seller, "Only seller can withdraw");
+        require(buyer != address(0), "Tokens not sold yet");
+
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(seller, balance);
+
+        emit TokenTransferred(address(this), seller, balance);
+
+        buyer = address(0);
+    }
+}
